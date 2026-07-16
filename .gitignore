@@ -219,3 +219,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Anki runtime config (contains user API keys — never commit)
+anki-tutor/meta.json
+# Generated assets / scratch (not part of the addon)
+assets/
