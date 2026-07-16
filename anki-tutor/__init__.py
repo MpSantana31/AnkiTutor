@@ -9,12 +9,13 @@ from __future__ import annotations
 
 try:
     from aqt import gui_hooks, mw
-    from aqt.qt import QAction
+    from aqt.qt import QAction, QKeySequence, QShortcut
     from aqt.reviewer import Reviewer
     from aqt.webview import WebContent
 except ImportError:
     # Outside Anki (e.g. tests/CI) the module must be importable without crashing.
     gui_hooks = mw = QAction = Reviewer = WebContent = None  # type: ignore[assignment]
+    QKeySequence = QShortcut = None  # type: ignore[assignment]
 
 
 def _current_card():
@@ -45,9 +46,23 @@ def open_config() -> None:
 def _inject_button(web_content: WebContent, context) -> None:
     if not isinstance(context, Reviewer):
         return
-    web_content.body += (
-        '<button id="ankitutor-btn" title="Ask a doubt (Ctrl+T)">Ask</button>'
-    )
+    web_content.body += """
+<style>
+#ankitutor-btn {
+    margin: 4px 6px;
+    padding: 4px 10px;
+    border: 1px solid #4a90d9;
+    border-radius: 4px;
+    background: #4a90d9;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+#ankitutor-btn:hover { background: #357abd; }
+</style>
+<button id="ankitutor-btn" onclick="pycmd('ankitutor-btn')"
+        title="Ask a doubt (Ctrl+Shift+T)">Ask AI</button>
+"""
 
 
 def _handle_js_message(handled, message, context):
@@ -64,13 +79,17 @@ def _setup_menu() -> None:
 
 
 def _setup_shortcut() -> None:
-    from aqt import keyboard
-
-    keyboard.addShortcut("Ctrl+T", open_panel)
+    shortcut = QShortcut(QKeySequence("Ctrl+Shift+T"), mw)
+    shortcut.activated.connect(open_panel)
 
 
 def init() -> None:
-    gui_hooks.reviewer_did_render_bottom.append(_inject_button)
+    # Anki 23+ uses reviewer_did_render_bottom; Anki 25 renamed it to
+    # webview_will_set_content. Register whichever is available.
+    if hasattr(gui_hooks, "reviewer_did_render_bottom"):
+        gui_hooks.reviewer_did_render_bottom.append(_inject_button)
+    else:
+        gui_hooks.webview_will_set_content.append(_inject_button)
     gui_hooks.webview_did_receive_js_message.append(_handle_js_message)
     _setup_menu()
     _setup_shortcut()
