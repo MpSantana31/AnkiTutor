@@ -79,6 +79,7 @@ def test_extra_headers_hook_is_empty_by_default():
 
 
 def test_chat_network_timeout(monkeypatch):
+    pytest.importorskip("requests")
     _load_addon()
     import requests
     from anki_tutor.errors import RequestTimeoutError as TE
@@ -93,6 +94,7 @@ def test_chat_network_timeout(monkeypatch):
 
 
 def test_chat_network_http_error_with_detail(monkeypatch):
+    pytest.importorskip("requests")
     _load_addon()
     import requests
     from anki_tutor.errors import AuthError as AE
@@ -116,6 +118,7 @@ def test_chat_network_http_error_with_detail(monkeypatch):
 
 
 def test_chat_network_success(monkeypatch):
+    pytest.importorskip("requests")
     _load_addon()
 
     import requests
