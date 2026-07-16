@@ -8,8 +8,7 @@ override ``base_url`` and, when needed, ``_extra_headers``.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-
-import requests
+from typing import Any
 
 from .. import prompts
 from ..errors import (
@@ -64,7 +63,7 @@ class BaseHTTPProvider(LLMProvider):
             "temperature": 0.3,
         }
 
-    def _map_error(self, exc: requests.HTTPError) -> None:
+    def _map_error(self, exc: Any) -> None:
         code = exc.response.status_code if exc.response is not None else 0
         detail = self._error_detail(exc.response)
         if code == 401:
@@ -91,6 +90,8 @@ class BaseHTTPProvider(LLMProvider):
     def chat(self, context: str, question: str, mode: str = "explain") -> str:
         if not self.api_key:
             raise AuthError("No API key configured.")
+
+        import requests
 
         try:
             resp = requests.post(
