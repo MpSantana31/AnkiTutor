@@ -1,0 +1,9 @@
+{
+  "package": "anki-tutor",
+  "name": "AnkiTutor",
+  "version": "0.1.0",
+  "homepage": "https://github.com/MpSantana31/AnkiTutor",
+  "conflicts": [],
+  "mod": "anki-tutor.__init__",
+  "description": "AI tutor for your Anki cards: explain concepts and clarify doubts during review, using the card's own context."
+}
