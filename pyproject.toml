@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anki-tutor"
+version = "0.1.0"
+description = "Tutor de IA para seus cards do Anki: explique conceitos e tire dúvidas durante a revisão."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["anki-tutor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
+
+[tool.ruff.format]
+
+[tool.pytest.ini_options]
+testpaths = ["anki-tutor/tests"]
+addopts = "-q --import-mode=importlib"
+
+[tool.coverage.run]
+source = ["anki-tutor"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
