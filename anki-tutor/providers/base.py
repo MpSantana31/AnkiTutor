@@ -10,6 +10,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
+try:
+    import requests
+except ImportError:  # tests/CI may run without requests installed
+    requests = None  # type: ignore[assignment]
+
 from .. import prompts
 from ..errors import (
     AuthError,
@@ -90,8 +95,8 @@ class BaseHTTPProvider(LLMProvider):
     def chat(self, context: str, question: str, mode: str = "explain") -> str:
         if not self.api_key:
             raise AuthError("No API key configured.")
-
-        import requests
+        if requests is None:
+            raise ProviderError("requests is not available in this environment.")
 
         try:
             resp = requests.post(
