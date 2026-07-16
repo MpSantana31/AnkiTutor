@@ -5,5 +5,6 @@
   "homepage": "https://github.com/MpSantana31/AnkiTutor",
   "conflicts": [],
   "mod": "anki-tutor.__init__",
+  "config": true,
   "description": "AI tutor for your Anki cards: explain concepts and clarify doubts during review, using the card's own context."
 }
