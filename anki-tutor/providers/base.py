@@ -7,6 +7,7 @@ override ``base_url`` and, when needed, ``_extra_headers``.
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -21,6 +22,7 @@ from ..errors import (
     ProviderError,
     RateLimitError,
     RequestTimeoutError,
+    TutorError,
 )
 
 
@@ -32,6 +34,33 @@ class LLMProvider(ABC):
     @abstractmethod
     def chat(self, context: str, question: str, mode: str = "explain") -> str:
         """Return the model's answer given the card context and a question."""
+
+    def chat_stream(
+        self,
+        context: str,
+        question: str,
+        mode: str = "explain",
+        on_token: Any = None,
+        on_done: Any = None,
+        on_error: Any = None,
+    ) -> str:
+        """Stream the answer, emitting tokens via callbacks.
+
+        Default implementation falls back to ``chat`` (useful for providers/tests
+        without native streaming). Concrete HTTP providers override this with
+        real SSE streaming (ADR-003).
+        """
+        try:
+            answer = self.chat(context, question, mode)
+        except Exception as exc:  # noqa: BLE001
+            if on_error is not None:
+                on_error(exc)
+            return ""
+        if on_token is not None:
+            on_token(answer)
+        if on_done is not None:
+            on_done(answer)
+        return answer
 
 
 class BaseHTTPProvider(LLMProvider):
@@ -138,3 +167,119 @@ class BaseHTTPProvider(LLMProvider):
             raise ProviderError("Provider returned an empty answer.")
 
         return content.strip()
+
+    def chat_stream(
+        self,
+        context: str,
+        question: str,
+        mode: str = "explain",
+        on_token: Any = None,
+        on_done: Any = None,
+        on_error: Any = None,
+    ) -> str:
+        """Stream tokens from the OpenAI-compatible ``/chat/completions`` SSE API.
+
+        Emits each delta via ``on_token`` and the full text via ``on_done``.
+        Errors are routed to ``on_error`` (or raised if no callback). Mapping of
+        HTTP errors to ``TutorError`` mirrors :meth:`chat` (ADR-005).
+        """
+        if not self.api_key:
+            exc = AuthError("No API key configured.")
+            if on_error is not None:
+                on_error(exc)
+            else:
+                raise exc
+            return ""
+
+        if requests is None:
+            exc = ProviderError("requests is not available in this environment.")
+            if on_error is not None:
+                on_error(exc)
+            else:
+                raise exc
+            return ""
+
+        payload = self._payload(context, question, mode)
+        payload["stream"] = True
+
+        chunks: list[str] = []
+        try:
+            resp = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=self._headers(),
+                json=payload,
+                timeout=30,
+                stream=True,
+            )
+            resp.raise_for_status()
+            # Decode as UTF-8 explicitly (not requests' guessed encoding, which
+            # may fall back to Latin-1 for text/event-stream without charset and
+            # mangle accented characters). Lines arrive as bytes via iter_lines.
+            for raw in resp.iter_lines(decode_unicode=False):
+                if not raw:
+                    continue
+                try:
+                    if isinstance(raw, bytes):
+                        line = raw.decode("utf-8", errors="replace")
+                    else:
+                        line = str(raw)
+                except (UnicodeDecodeError, TypeError):
+                    continue
+                if line.startswith("data:"):
+                    data_str = line[len("data:") :].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(data_str)
+                    except (ValueError, TypeError):
+                        continue
+                    if "error" in data:
+                        err = data["error"]
+                        if isinstance(err, dict):
+                            msg = err.get("message", "")
+                        else:
+                            msg = str(err)
+                        raise ProviderError(f"Provider error: {msg}") from None
+                    choices = data.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta", {})
+                    piece = delta.get("content")
+                    if piece:
+                        chunks.append(piece)
+                        if on_token is not None:
+                            on_token(piece)
+        except requests.Timeout:
+            exc = RequestTimeoutError("Request to the provider timed out.")
+            if on_error is not None:
+                on_error(exc)
+            else:
+                raise exc from None
+            return "".join(chunks)
+        except requests.HTTPError as exc:
+            try:
+                self._map_error(exc)
+            except TutorError as mapped:
+                if on_error is not None:
+                    on_error(mapped)
+                else:
+                    raise mapped from None
+            return "".join(chunks)
+        except TutorError as exc:
+            if on_error is not None:
+                on_error(exc)
+            else:
+                raise exc from None
+            return "".join(chunks)
+        except requests.RequestException as exc:
+            err = ProviderError(f"Network error: {exc}")
+            if on_error is not None:
+                on_error(err)
+            else:
+                raise err from None
+            return "".join(chunks)
+
+        full = "".join(chunks).strip()
+        if on_done is not None:
+            on_done(full)
+        return full
