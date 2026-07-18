@@ -222,5 +222,7 @@ __marimo__/
 
 # Anki runtime config (contains user API keys — never commit)
 anki-tutor/meta.json
+# Per-card question history (contains user card content — never commit)
+anki-tutor/history.json
 # Generated assets / scratch (not part of the addon)
 assets/
