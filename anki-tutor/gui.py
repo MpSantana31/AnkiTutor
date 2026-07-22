@@ -27,9 +27,8 @@ try:
     from aqt.theme import theme_manager
 except ImportError:  # Outside Anki (tests/CI)
     mw = None  # type: ignore[assignment]
-    QComboBox = QDialog = QHBoxLayout = QLabel = QPlainTextEdit = QPushButton = QTextBrowser = QVBoxLayout = (  # type: ignore[assignment]
-        None
-    )
+    QComboBox = QDialog = QHBoxLayout = None  # type: ignore[assignment]
+    QLabel = QPlainTextEdit = QPushButton = QTextBrowser = QVBoxLayout = None  # type: ignore[assignment]
     QThread = pyqtSignal = None  # type: ignore[assignment]
     colors = gui_hooks = None  # type: ignore[assignment]
     theme_manager = None  # type: ignore[assignment]
