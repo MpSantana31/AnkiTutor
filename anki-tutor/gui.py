@@ -11,11 +11,10 @@ from __future__ import annotations
 from typing import Any
 
 try:
-    from aqt import mw
+    from aqt import colors, gui_hooks, mw
     from aqt.qt import (
         QComboBox,
         QDialog,
-        QDialogButtonBox,
         QHBoxLayout,
         QLabel,
         QPlainTextEdit,
@@ -23,17 +22,17 @@ try:
         QTextBrowser,
         QThread,
         QVBoxLayout,
-        QWidget,
         pyqtSignal,
     )
+    from aqt.theme import theme_manager
 except ImportError:  # Outside Anki (tests/CI)
     mw = None  # type: ignore[assignment]
-    QComboBox = QDialog = QDialogButtonBox = (  # type: ignore[assignment]
-        QHBoxLayout
-    ) = QLabel = QPlainTextEdit = QPushButton = QTextBrowser = QVBoxLayout = QWidget = (
+    QComboBox = QDialog = QHBoxLayout = QLabel = QPlainTextEdit = QPushButton = QTextBrowser = QVBoxLayout = (  # type: ignore[assignment]
         None
     )
     QThread = pyqtSignal = None  # type: ignore[assignment]
+    colors = gui_hooks = None  # type: ignore[assignment]
+    theme_manager = None  # type: ignore[assignment]
 
 from . import utils
 from .errors import TutorError
@@ -68,101 +67,15 @@ def build_conversation_markdown(turns, user_label=user_label) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-_STYLESHEET = """
-QWidget#panel {
-    background: #1e1e2e;
-}
-QLabel {
-    color: #cdd6f4;
-    font-size: 13px;
-}
-QLabel#header {
-    color: #89b4fa;
+def _build_stylesheet() -> str:
+    if theme_manager is None:
+        return ""
+    tm = theme_manager
+    return f"""
+QLabel#header {{
+    color: {tm.var(colors.FG_LINK)};
     font-weight: bold;
-    font-size: 14px;
-}
-QPlainTextEdit, QTextBrowser {
-    background: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
-    border-radius: 6px;
-    padding: 8px;
-    font-size: 13px;
-}
-QTextBrowser#card-display {
-    background: #181825;
-    border: 1px solid #313244;
-    max-height: 120px;
-    min-height: 60px;
-}
-QTextBrowser#answer-display {
-    background: #181825;
-    border: 1px solid #313244;
-}
-QComboBox {
-    background: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
-    border-radius: 4px;
-    padding: 4px 8px;
-    min-width: 120px;
-}
-QComboBox::drop-down {
-    border: none;
-}
-QPushButton {
-    background: #89b4fa;
-    color: #1e1e2e;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 18px;
-    font-weight: bold;
-    font-size: 13px;
-}
-QPushButton:hover {
-    background: #74c7ec;
-}
-QPushButton:pressed {
-    background: #89dceb;
-}
-QPushButton#close-btn {
-    background: #45475a;
-    color: #cdd6f4;
-}
-QPushButton#close-btn:hover {
-    background: #585b70;
-}
-QTextBrowser#chat-display {
-    background: #181825;
-    border: 1px solid #313244;
-}
-.bubble-user {
-    background: #313244;
-    border-left: 4px solid #89b4fa;
-    border-radius: 6px;
-    padding: 6px 8px;
-    margin: 4px 0;
-    color: #cdd6f4;
-}
-.bubble-ai {
-    background: #1e1e2e;
-    border-left: 4px solid #a6e3a1;
-    border-radius: 6px;
-    padding: 6px 8px;
-    margin: 4px 0;
-    color: #cdd6f4;
-}
-.bubble-error {
-    background: #1e1e2e;
-    border-left: 4px solid #f38ba8;
-    border-radius: 6px;
-    padding: 6px 8px;
-    margin: 4px 0;
-    color: #f38ba8;
-}
-.bubble-role {
-    font-weight: bold;
-}
+}}
 """
 
 
@@ -241,7 +154,7 @@ class TutorPanel:
         dlg.setWindowTitle("AnkiTutor — Ask a doubt")
         dlg.setMinimumSize(560, 520)
         dlg.setObjectName("panel")
-        dlg.setStyleSheet(_STYLESHEET)
+        dlg.setStyleSheet(_build_stylesheet())
 
         layout = QVBoxLayout(dlg)
         layout.setSpacing(10)
@@ -255,10 +168,18 @@ class TutorPanel:
         card_display = QTextBrowser()
         card_display.setObjectName("card-display")
         card_display.setOpenExternalLinks(False)
+        card_display.setMaximumHeight(120)
+        card_display.setMinimumHeight(60)
+        if theme_manager is not None:
+            front_color = theme_manager.var(colors.ACCENT_CARD)
+            back_color = theme_manager.var(colors.ACCENT_NOTE)
+        else:
+            front_color = "#60a5fa"
+            back_color = "#22c55e"
         card_display.setHtml(
-            f'<span style="color:#a6e3a1;font-weight:bold;">Front:</span> {front}'
+            f'<span style="color:{front_color};font-weight:bold;">Front:</span> {front}'
             f"<br>"
-            f'<span style="color:#f38ba8;font-weight:bold;">Back:</span> {back}'
+            f'<span style="color:{back_color};font-weight:bold;">Back:</span> {back}'
         )
         layout.addWidget(card_display)
 
@@ -307,8 +228,19 @@ class TutorPanel:
 
         self._last_answer = None
         self._dlg = dlg
+        if gui_hooks is not None:
+            gui_hooks.theme_did_change.append(self._on_theme_changed)
+            dlg.finished.connect(self._cleanup_theme_hook)
         self._apply_mode_ui(self.mode_box.currentText())
         self._render_history()
+
+    def _on_theme_changed(self) -> None:
+        if self._dlg is not None:
+            self._dlg.setStyleSheet(_build_stylesheet())
+
+    def _cleanup_theme_hook(self) -> None:
+        if gui_hooks is not None:
+            gui_hooks.theme_did_change.remove(self._on_theme_changed)
 
     def _on_mode_changed(self, mode: str) -> None:
         self._apply_mode_ui(mode)

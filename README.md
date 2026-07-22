@@ -7,7 +7,8 @@
 
 ## Demo
 
-<!-- GIF: review a card → click "Ask" → AI answer -->
+> Record a short GIF: review a card → click **Ask AI** (or `Ctrl+Shift+T`) → type a
+> question → watch the streamed, Markdown-rendered answer → **Save to note**.
 
 ## Why?
 
@@ -26,11 +27,12 @@ the AI explains the card based on what is on its front and back.
 
 ## Supported providers
 
-| Provider   | Cloud? | Privacy                     |
-|------------|--------|-----------------------------|
-| OpenAI     | yes    | data leaves the machine     |
-| OpenRouter | yes    | data leaves the machine     |
-| OpenCode   | yes    | data leaves the machine (requires key + credits) |
+| Provider    | Cloud? | Privacy                     |
+|-------------|--------|-----------------------------|
+| OpenAI      | yes    | data leaves the machine     |
+| OpenRouter  | yes    | data leaves the machine     |
+| OpenCode Zen| yes    | data leaves the machine (requires key + credits) |
+| OpenCode Go | yes    | data leaves the machine (requires key + credits) |
 
 ## Architecture (overview)
 
@@ -57,7 +59,8 @@ MIT — see [LICENSE](LICENSE).
 
 ## Demo
 
-<!-- GIF: revisar card → clicar "Tirar dúvida" → resposta da IA -->
+> Grave um GIF curto: revisar card → clicar **Tirar dúvida** (ou `Ctrl+Shift+T`) →
+> digitar pergunta → ver a resposta em streaming renderizada em Markdown → **Salvar na nota**.
 
 ## Por que?
 
@@ -76,11 +79,12 @@ Estudar com Anki é repetir. O AnkiTutor adiciona uma camada de
 
 ## Provedores suportados
 
-| Provedor  | Nuvem? | Privacidade                |
-|-----------|--------|----------------------------|
-| OpenAI    | sim    | dados saem da máquina      |
-| OpenRouter| sim    | dados saem da máquina      |
-| OpenCode  | sim    | dados saem da máquina (requer chave + créditos) |
+| Provedor   | Nuvem? | Privacidade                |
+|------------|--------|----------------------------|
+| OpenAI     | sim    | dados saem da máquina      |
+| OpenRouter | sim    | dados saem da máquina      |
+| OpenCode Zen | sim  | dados saem da máquina (requer chave + créditos) |
+| OpenCode Go | sim   | dados saem da máquina (requer chave + créditos) |
 
 ## Arquitetura (resumo)
 

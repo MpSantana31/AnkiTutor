@@ -46,19 +46,32 @@ def open_config() -> None:
 def _inject_button(web_content: WebContent, context) -> None:
     if not isinstance(context, Reviewer):
         return
-    web_content.body += """
+    from aqt.theme import theme_manager
+
+    night = theme_manager.night_mode
+    if night:
+        bg = "#404040"
+        fg = "#fcfcfc"
+        border = "#202020"
+        hover_bg = "#4a4a4a"
+    else:
+        bg = "#fcfcfc"
+        fg = "#020202"
+        border = "#c4c4c4"
+        hover_bg = "#e8e8e8"
+    web_content.body += f"""
 <style>
-#ankitutor-btn {
+#ankitutor-btn {{
     margin: 4px 6px;
     padding: 4px 10px;
-    border: 1px solid #4a90d9;
+    border: 1px solid {border};
     border-radius: 4px;
-    background: #4a90d9;
-    color: #fff;
+    background: {bg};
+    color: {fg};
     font-weight: 600;
     cursor: pointer;
-}
-#ankitutor-btn:hover { background: #357abd; }
+}}
+#ankitutor-btn:hover {{ background: {hover_bg}; }}
 </style>
 <button id="ankitutor-btn" onclick="pycmd('ankitutor-btn')"
         title="Ask a doubt (Ctrl+Shift+T)">Ask AI</button>
