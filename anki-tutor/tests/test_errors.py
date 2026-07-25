@@ -33,3 +33,10 @@ def test_does_not_shadow_builtin_timeout():
 
     assert RequestTimeoutError is not builtins.TimeoutError
     assert isinstance(RequestTimeoutError("x"), TutorError)
+
+
+def test_user_message_without_hint():
+    err = TutorError("just an error")
+    msg = err.user_message
+    assert msg == "just an error"
+    assert "\n\n" not in msg

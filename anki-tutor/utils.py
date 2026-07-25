@@ -67,10 +67,12 @@ def build_save_text(question: str, answer: str, mode: str = "explain") -> str:
 def save_answer_to_note(card: Any, text: str) -> SaveResult:
     """Append ``text`` to the card's note and persist it.
 
-    Prefers a field named ``AnkiTutor``; otherwise appends to the last field
-    (option A — never mutates the note's model). Works with both the real Anki
-    ``Note`` (``note.fields`` is a list; accessed dict-like via ``note[name]``)
-    and the test ``FakeCard``/``FakeNote`` (``fields`` as a dict).
+    Tries to find or auto-create a field named ``AnkiTutor`` on the note's
+    model. If that's not possible (e.g. outside Anki or model not editable),
+    returns an error message asking the user to add it manually.
+
+    Works with both the real Anki ``Note`` (``note.fields`` is a list; accessed
+    dict-like via ``note[name]``) and the test ``FakeCard``/``FakeNote``.
 
     Returns a :class:`SaveResult` (message + field written). Raises nothing.
     """
@@ -84,13 +86,21 @@ def save_answer_to_note(card: Any, text: str) -> SaveResult:
         return SaveResult("Could not access this card's note to save.")
 
     target = _resolve_target_field(note)
-    if target is None:
-        return SaveResult("This card has no writable note fields.")
+
+    # If "AnkiTutor" does not exist, try to create it automatically.
+    if target != "AnkiTutor":
+        if _ensure_anki_tutor_field(note):
+            target = "AnkiTutor"
+        else:
+            return SaveResult(
+                "No 'AnkiTutor' field found. Please add it to your note type: "
+                "Edit the card (Ctrl+E) → Fields... → Add field → name it 'AnkiTutor'."
+            )
 
     try:
         existing = (note[target] or "").strip()
     except Exception:  # noqa: BLE001
-        return SaveResult("This card has no writable note fields.")
+        return SaveResult("The 'AnkiTutor' field is not accessible on this note.")
     note[target] = f"{existing}\n\n{text}" if existing else text
 
     try:
@@ -100,12 +110,8 @@ def save_answer_to_note(card: Any, text: str) -> SaveResult:
     return SaveResult("Saved to note.", field=target)
 
 
-def _resolve_target_field(note: Any) -> str | None:
-    """Return the field name to write to, or None when there are no fields.
-
-    Prefers ``AnkiTutor``; otherwise the last field. Supports the Anki ``Note``
-    (dict-like: ``note.keys()`` / ``note[name]``) and the test dict ``fields``.
-    """
+def _get_field_names(note: Any) -> list[str]:
+    """Extract field names from a note (Anki Note, FakeNote, or dict)."""
     names: list[str] = []
     keys = getattr(note, "keys", None)
     if callable(keys):
@@ -117,9 +123,57 @@ def _resolve_target_field(note: Any) -> str | None:
         fields = getattr(note, "fields", None)
         if isinstance(fields, dict):
             names = list(fields.keys())
+    return names
+
+
+def _resolve_target_field(note: Any) -> str | None:
+    """Return the field name to write to, or None when there are no fields.
+
+    Prefers ``AnkiTutor``; otherwise the last field.
+    """
+    names = _get_field_names(note)
     if not names:
         return None
     return "AnkiTutor" if "AnkiTutor" in names else names[-1]
+
+
+def _ensure_anki_tutor_field(note: Any) -> bool:
+    """Try to create an 'AnkiTutor' field on the note's model (Anki only).
+
+    Returns True if the field already exists or was successfully created.
+    Returns False when outside Anki or the model cannot be edited.
+    """
+    mw = _get_mw()
+    if mw is None:
+        return False
+    try:
+        note_type = getattr(note, "note_type", None)
+        if callable(note_type):
+            note_type = note_type()
+        if note_type is None:
+            note_type = getattr(note, "model", None)
+            if callable(note_type):
+                note_type = note_type()
+        if note_type is None:
+            return False
+
+        # Field already exists — nothing to do.
+        for f in note_type["fields"]:
+            if f["name"] == "AnkiTutor":
+                return True
+
+        new_field = mw.col.models.new_field("AnkiTutor")
+        mw.col.models.add_field(note_type, new_field)
+        mw.col.models.save(note_type)
+
+        # Extend this note's fields list so it matches the updated model.
+        note_fields = getattr(note, "fields", None)
+        if isinstance(note_fields, list):
+            note_fields.append("")
+
+        return True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _persist_note(note: Any) -> None:

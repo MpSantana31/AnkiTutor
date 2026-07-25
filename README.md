@@ -7,8 +7,10 @@
 
 ## Demo
 
-> Record a short GIF: review a card → click **Ask AI** (or `Ctrl+Shift+T`) → type a
-> question → watch the streamed, Markdown-rendered answer → **Save to note**.
+![AnkiTutor demo](assets/demo.gif)
+
+> Review a card → click **Ask AI** (or `Ctrl+Shift+T`) → type a question → watch the
+> streamed, Markdown-rendered answer → **Save to note**.
 
 ## Why?
 
@@ -17,7 +19,7 @@ the AI explains the card based on what is on its front and back.
 
 ## Installation
 
-- **AnkiWeb:** (link coming soon)
+- **AnkiWeb:** (submitted — awaiting review)
 - **Manual:** clone this repo into `addons21/anki-tutor`:
   ```bash
   git clone https://github.com/MpSantana31/AnkiTutor.git \
@@ -27,12 +29,17 @@ the AI explains the card based on what is on its front and back.
 
 ## Supported providers
 
-| Provider    | Cloud? | Privacy                     |
-|-------------|--------|-----------------------------|
-| OpenAI      | yes    | data leaves the machine     |
-| OpenRouter  | yes    | data leaves the machine     |
-| OpenCode Zen| yes    | data leaves the machine (requires key + credits) |
-| OpenCode Go | yes    | data leaves the machine (requires key + credits) |
+| Provider      | Cloud? | API key | Cost |
+|---------------|--------|---------|------|
+| OpenAI        | yes    | required | pay-per-use |
+| OpenRouter    | yes    | required | pay-per-use |
+| OpenCode Zen  | yes    | required | credits |
+| OpenCode Go   | yes    | required | credits |
+
+**Your data:** only the card's front and back text plus your question are sent
+to the LLM provider. No personal info (deck names, review stats, etc.) is
+transmitted. Your API key is stored locally by Anki and never committed to the
+repository. The add-on makes no external calls besides the LLM provider API.
 
 ## Architecture (overview)
 
@@ -59,8 +66,10 @@ MIT — see [LICENSE](LICENSE).
 
 ## Demo
 
-> Grave um GIF curto: revisar card → clicar **Tirar dúvida** (ou `Ctrl+Shift+T`) →
-> digitar pergunta → ver a resposta em streaming renderizada em Markdown → **Salvar na nota**.
+![AnkiTutor demo](assets/demo.gif)
+
+> Revise um card → clique **Tirar dúvida** (ou `Ctrl+Shift+T`) → digite uma
+> pergunta → veja a resposta em streaming renderizada em Markdown → **Salvar na nota**.
 
 ## Por que?
 
@@ -69,7 +78,7 @@ Estudar com Anki é repetir. O AnkiTutor adiciona uma camada de
 
 ## Instalação
 
-- **AnkiWeb:** (link em breve)
+- **AnkiWeb:** (submetido — aguardando revisão)
 - **Manual:** clone este repositório em `addons21/anki-tutor`:
   ```bash
   git clone https://github.com/MpSantana31/AnkiTutor.git \
@@ -79,12 +88,18 @@ Estudar com Anki é repetir. O AnkiTutor adiciona uma camada de
 
 ## Provedores suportados
 
-| Provedor   | Nuvem? | Privacidade                |
-|------------|--------|----------------------------|
-| OpenAI     | sim    | dados saem da máquina      |
-| OpenRouter | sim    | dados saem da máquina      |
-| OpenCode Zen | sim  | dados saem da máquina (requer chave + créditos) |
-| OpenCode Go | sim   | dados saem da máquina (requer chave + créditos) |
+| Provedor      | Nuvem? | API key | Custo |
+|---------------|--------|---------|-------|
+| OpenAI        | sim    | obrigatória | pay-per-use |
+| OpenRouter    | sim    | obrigatória | pay-per-use |
+| OpenCode Zen  | sim    | obrigatória | créditos |
+| OpenCode Go   | sim    | obrigatória | créditos |
+
+**Seus dados:** apenas o texto da frente e do verso do card mais sua pergunta
+são enviados ao provedor de LLM. Nenhuma informação pessoal (nomes de baralho,
+estatísticas de revisão, etc.) é transmitida. Sua chave de API é armazenada
+localmente pelo Anki e nunca é versionada no repositório. O addon não faz
+nenhuma chamada externa além da API do provedor de LLM.
 
 ## Arquitetura (resumo)
 

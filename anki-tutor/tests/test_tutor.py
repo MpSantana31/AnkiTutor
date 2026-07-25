@@ -76,7 +76,8 @@ def test_tutor_ask_with_fake_provider(monkeypatch, fake_card):
     assert result.deck_id == fake_card.deck_id
     assert result.provider == "openai"
     assert result.model == "fake-model"
-    assert result.timestamp
+    assert result.asked_at
+    assert result.answered_at
 
 
 def test_tutor_ask_empty_question_raises(monkeypatch, fake_card):
@@ -157,3 +158,24 @@ def test_tutor_ask_explain_requires_question(monkeypatch, fake_card):
 
     with pytest.raises(ConfigError):
         tutor.ask_stream(fake_card, "", "explain")
+
+
+def test_tutor_ask_stream_on_done_callback(monkeypatch, fake_card):
+    _load_addon()
+    from anki_tutor import tutor
+    from anki_tutor.tests.fixtures import FakeProvider
+
+    monkeypatch.setattr(tutor, "create_provider", lambda n, c: FakeProvider())
+    monkeypatch.setattr(tutor.config, "get_config", _config_with_key)
+
+    done_answers = []
+
+    def _on_done(answer):
+        done_answers.append(answer)
+
+    result = tutor.ask_stream(
+        fake_card, "what?", "explain", on_token=lambda _: None, on_done=_on_done
+    )
+    assert len(done_answers) == 1
+    assert done_answers[0].answer == result
+    assert done_answers[0].card_id == fake_card.card_id
