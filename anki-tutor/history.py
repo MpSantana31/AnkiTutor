@@ -29,7 +29,8 @@ def _entry(answer: TutorAnswer) -> dict[str, Any]:
         "provider": answer.provider,
         "model": answer.model,
         "deck_id": answer.deck_id,
-        "timestamp": answer.timestamp,
+        "asked_at": answer.asked_at,
+        "answered_at": answer.answered_at,
     }
 
 
@@ -49,6 +50,16 @@ def append_history(answer: TutorAnswer) -> None:
     key = str(answer.card_id)
     data.setdefault(key, [])
     data[key].append(_entry(answer))
+    _write_all(data)
+
+
+def clear_history(card_id: int | None) -> None:
+    """Remove all history entries for ``card_id`` and persist the change."""
+    if card_id is None:
+        return
+    data = _read_all()
+    key = str(card_id)
+    data.pop(key, None)
     _write_all(data)
 
 

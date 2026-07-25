@@ -30,7 +30,8 @@ def _make_answer(card_id: int | None = 1, deck_id: int | None = 42):
         deck_id=deck_id,
         provider="openai",
         model="gpt-4o-mini",
-        timestamp="2026-07-16T12:00:00Z",
+        asked_at="2026-07-16T12:00:00Z",
+        answered_at="2026-07-16T12:00:05Z",
     )
 
 
@@ -85,3 +86,39 @@ def test_append_without_card_id_is_noop(tmp_path, monkeypatch):
     monkeypatch.setattr("anki_tutor.history.HISTORY_PATH", tmp_path / "history.json")
     append_history(_make_answer(card_id=None))
     assert not (tmp_path / "history.json").exists()
+
+
+def test_load_history_none_returns_empty(tmp_path, monkeypatch):
+    _load_addon()
+    from anki_tutor.history import load_history
+
+    monkeypatch.setattr("anki_tutor.history.HISTORY_PATH", tmp_path / "history.json")
+    assert load_history(None) == []
+
+
+def test_clear_history_removes_all_entries(tmp_path, monkeypatch):
+    _load_addon()
+    from anki_tutor.history import append_history, clear_history, load_history
+
+    monkeypatch.setattr("anki_tutor.history.HISTORY_PATH", tmp_path / "history.json")
+    append_history(_make_answer(card_id=1))
+    append_history(_make_answer(card_id=1))
+    assert len(load_history(1)) == 2
+    clear_history(1)
+    assert load_history(1) == []
+
+
+def test_clear_history_unknown_card_is_noop(tmp_path, monkeypatch):
+    _load_addon()
+    from anki_tutor.history import clear_history, load_history
+
+    monkeypatch.setattr("anki_tutor.history.HISTORY_PATH", tmp_path / "history.json")
+    clear_history(999)  # should not raise
+
+
+def test_clear_history_none_is_noop(tmp_path, monkeypatch):
+    _load_addon()
+    from anki_tutor.history import clear_history
+
+    monkeypatch.setattr("anki_tutor.history.HISTORY_PATH", tmp_path / "history.json")
+    clear_history(None)  # should not raise

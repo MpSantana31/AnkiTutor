@@ -119,7 +119,10 @@ def test_save_answer_appends_when_field_has_content():
     assert "new" in note["AnkiTutor"]
 
 
-def test_save_answer_to_last_field_when_no_ankitutor():
+def test_save_answer_fails_when_no_ankitutor_field(tmp_path, monkeypatch):
+    """Now requires 'AnkiTutor' field; no more fallback to last field."""
+    from anki_tutor.utils import save_answer_to_note
+
     class Note(dict):
         fields = None  # type: ignore[assignment]
 
@@ -156,10 +159,10 @@ def test_save_answer_to_last_field_when_no_ankitutor():
             return note
 
     msg = save_answer_to_note(Card(), "explain text")
-    assert msg.message == "Saved to note."
-    assert note["Back"].endswith("explain text")
-    # Front must be untouched.
-    assert note["Front"] == "q"
+    assert "AnkiTutor" in msg.message
+    assert "add it" in msg.message.lower()
+    # Nothing was saved — Back field must be untouched.
+    assert note["Back"] == "a"
 
 
 def test_save_answer_no_note_returns_message():
@@ -180,7 +183,11 @@ def test_save_answer_no_fields_returns_message():
         def note(self):
             return Note()
 
-    assert "no writable" in save_answer_to_note(Card(), "x").message
+    msg = save_answer_to_note(Card(), "x")
+    # Without any fields, _resolve_target_field returns None, then
+    # _ensure_anki_tutor_field fails (no mw in tests), so we get the
+    # "no AnkiTutor field" message.
+    assert "AnkiTutor" in msg.message
 
 
 def test_build_save_text_combines_question_and_answer():

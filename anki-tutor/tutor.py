@@ -31,7 +31,8 @@ class TutorAnswer:
     deck_id: int | None
     provider: str
     model: str
-    timestamp: str
+    asked_at: str
+    answered_at: str
 
 
 def ask(card: object, question: str, mode: str = "explain") -> TutorAnswer:
@@ -47,9 +48,14 @@ def ask(card: object, question: str, mode: str = "explain") -> TutorAnswer:
         raise ConfigError("Please type a question.")
 
     provider_name, provider, context, card_id, deck_id = _prepare(card, cfg)
+    asked_at = _now()
     text = provider.chat(context, question.strip(), mode)
+    answered_at = _now()
 
-    return _pack(provider_name, provider, question, mode, card_id, deck_id, text)
+    return _pack(
+        provider_name, provider, question, mode, card_id, deck_id, text,
+        asked_at, answered_at,
+    )
 
 
 def ask_stream(
@@ -72,6 +78,7 @@ def ask_stream(
         raise ConfigError("Please type a question.")
 
     provider_name, provider, context, card_id, deck_id = _prepare(card, cfg)
+    asked_at = _now()
     text_holder = {"value": ""}
 
     fallback = (
@@ -82,9 +89,12 @@ def ask_stream(
     final_question = resolved.strip() or fallback
 
     def _on_done(full: str) -> None:
+        nonlocal asked_at
+        answered_at = _now()
         text_holder["value"] = full
         answer = _pack(
-            provider_name, provider, final_question, mode, card_id, deck_id, full
+            provider_name, provider, final_question, mode, card_id, deck_id, full,
+            asked_at, answered_at,
         )
         from .history import append_history
 
@@ -127,7 +137,8 @@ def _prepare(card: object, cfg: dict):
 
 
 def _pack(
-    provider_name, provider, question, mode, card_id, deck_id, text
+    provider_name, provider, question, mode, card_id, deck_id, text,
+    asked_at=None, answered_at=None,
 ) -> TutorAnswer:
     return TutorAnswer(
         answer=text,
@@ -137,7 +148,8 @@ def _pack(
         deck_id=deck_id,
         provider=provider_name,
         model=provider.model,
-        timestamp=_now(),
+        asked_at=asked_at or _now(),
+        answered_at=answered_at or _now(),
     )
 
 

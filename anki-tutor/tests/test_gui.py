@@ -42,14 +42,17 @@ def test_build_conversation_markdown_renders_turns():
     from anki_tutor import gui
 
     turns = [
-        ("What is strtok?", "explain", "It splits strings.", False),
-        ("", "simplify", "Simpler: it splits strings.", False),
+        ("What is strtok?", "explain", "It splits strings.", False, "2026-07-16T12:00:00Z", "2026-07-16T12:00:05Z"),
+        ("", "simplify", "Simpler: it splits strings.", False, "2026-07-16T12:01:00Z", "2026-07-16T12:01:03Z"),
     ]
     md = gui.build_conversation_markdown(turns, gui.user_label)
-    assert "**You:** What is strtok?" in md
-    assert "**You (simplify):** [simplify]" in md
+    assert "**You**" in md
+    assert "**You (simplify)**" in md
+    assert "What is strtok?" in md
+    assert "[simplify]" in md
     assert "It splits strings." in md
     assert "Simpler: it splits strings." in md
+    assert "16/07" in md  # timestamp rendered
     assert "\n\n---\n\n" in md
 
 

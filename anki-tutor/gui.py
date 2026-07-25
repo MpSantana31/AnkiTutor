@@ -41,6 +41,19 @@ from .prompts import DIRECT_MODES
 _MODES = ("explain", "simplify", "example", "relate")
 
 
+def _fmt_ts(iso_str: str) -> str:
+    """Format ISO timestamp like '2026-07-24T12:00:00Z' to '24/07 12:00'."""
+    if not iso_str:
+        return ""
+    try:
+        from datetime import datetime, timezone
+
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt.astimezone(timezone.utc).strftime("%d/%m %H:%M")
+    except (ValueError, TypeError):
+        return iso_str
+
+
 def user_label(question: str, mode: str) -> str:
     """Label shown on the user bubble (mode name for direct modes)."""
     if mode in DIRECT_MODES:
@@ -49,20 +62,27 @@ def user_label(question: str, mode: str) -> str:
 
 
 def build_conversation_markdown(turns, user_label=user_label) -> str:
-    """Render ``turns`` (question, mode, answer, is_error) as Markdown bubbles.
+    """Render ``turns`` (question, mode, answer, is_error, asked_at, answered_at) as Markdown bubbles.
 
-    Each turn becomes a ``**Role:** text`` heading followed by the answer,
-    separated by a horizontal rule. Kept module-level so the chat layout can be
-    unit-tested without PyQt/Anki.
+    Each turn becomes a role heading with optional timestamp, followed by the
+    answer and an optional answered-at timestamp, separated by a horizontal rule.
+    Kept module-level so the chat layout can be unit-tested without PyQt/Anki.
     """
     parts = []
-    for question, mode, answer, _is_error in turns:
+    for turn in turns:
+        question, mode, answer, _is_error = turn[:4]
+        asked_at = turn[4] if len(turn) > 4 else ""
+        answered_at = turn[5] if len(turn) > 5 else ""
         role = user_label(question, mode)
         if mode in DIRECT_MODES and not question:
             shown = f"[{mode}]"
         else:
             shown = question or f"[{mode}]"
-        parts.append(f"**{role}:** {shown}\n\n{answer}")
+        ts = f" · {_fmt_ts(asked_at)}" if asked_at else ""
+        answer_ts = f" · {_fmt_ts(answered_at)}" if answered_at else ""
+        parts.append(
+            f"**{role}**{ts}: {shown}\n\n{answer}{answer_ts}"
+        )
     return "\n\n---\n\n".join(parts)
 
 
@@ -219,6 +239,10 @@ class TutorPanel:
         save_btn.setObjectName("save-btn")
         save_btn.clicked.connect(self._on_save)
         mode_row.addWidget(save_btn)
+        clear_btn = QPushButton("Clear history")
+        clear_btn.setObjectName("clear-btn")
+        clear_btn.clicked.connect(self._on_clear_history)
+        mode_row.addWidget(clear_btn)
         close_btn = QPushButton("Close")
         close_btn.setObjectName("close-btn")
         close_btn.clicked.connect(dlg.reject)
@@ -259,7 +283,7 @@ class TutorPanel:
 
     def _render_history(self) -> None:
         """Render past Q/A turns for this card as chat bubbles."""
-        _, card_id = utils.extract_card_meta(self.card)
+        card_id, _ = utils.extract_card_meta(self.card)
         self._conversation = []
         entries = load_history(card_id)
         for e in entries:
@@ -267,7 +291,12 @@ class TutorPanel:
             question = e.get("question", "")
             if mode in DIRECT_MODES and not question:
                 question = f"[{mode}]"
-            self._conversation.append((question, mode, e.get("answer", ""), False))
+            # Backward compat: old entries have a single "timestamp" key
+            asked_at = e.get("asked_at") or e.get("timestamp") or ""
+            answered_at = e.get("answered_at") or e.get("timestamp") or ""
+            self._conversation.append(
+                (question, mode, e.get("answer", ""), False, asked_at, answered_at)
+            )
         self._redraw()
 
     def _on_ask(self) -> None:
@@ -276,7 +305,7 @@ class TutorPanel:
         mode = self.mode_box.currentText()
         question = "" if mode in DIRECT_MODES else self.input.toPlainText().strip()
         self._streamed = ""
-        self._conversation.append((question, mode, "Thinking…", False))
+        self._conversation.append((question, mode, "Thinking…", False, "", ""))
         self._redraw()
         if mode not in DIRECT_MODES and self.input.toPlainText().strip():
             self.input.clear()
@@ -289,22 +318,25 @@ class TutorPanel:
     def _on_token(self, piece: str) -> None:
         self._streamed += piece
         if self._conversation:
-            question, mode, _, _ = self._conversation[-1]
-            self._conversation[-1] = (question, mode, self._streamed, False)
+            question, mode, _, _, asked_at, answered_at = self._conversation[-1]
+            self._conversation[-1] = (question, mode, self._streamed, False, asked_at, answered_at)
             self._redraw()
 
     def _on_done(self, answer) -> None:
         self._last_answer = answer
         if self._conversation:
-            question, mode, _, _ = self._conversation[-1]
-            self._conversation[-1] = (question, mode, answer.answer, False)
+            question, mode, _, _, _, _ = self._conversation[-1]
+            self._conversation[-1] = (
+                question, mode, answer.answer, False,
+                answer.asked_at, answer.answered_at,
+            )
             self._redraw()
 
     def _on_error(self, exc) -> None:
         msg = exc.user_message if isinstance(exc, TutorError) else f"Error: {exc}"
         if self._conversation:
-            question, mode, _, _ = self._conversation[-1]
-            self._conversation[-1] = (question, mode, msg, True)
+            question, mode, _, _, _, _ = self._conversation[-1]
+            self._conversation[-1] = (question, mode, msg, True, "", "")
             self._redraw()
 
     def _redraw(self) -> None:
@@ -334,6 +366,15 @@ class TutorPanel:
         if len(preview) > 80:
             preview = preview[:77] + "…"
         self._conversation.append(
-            ("", "explain", f"Saved to note{detail}.\n\n> {preview}", True)
+            ("", "explain", f"Saved to note{detail}.\n\n> {preview}", True, "", "")
         )
+        self._redraw()
+
+    def _on_clear_history(self) -> None:
+        """Clear all history entries for the current card and re-render."""
+        card_id, _ = utils.extract_card_meta(self.card)
+        from .history import clear_history
+
+        clear_history(card_id)
+        self._conversation.clear()
         self._redraw()

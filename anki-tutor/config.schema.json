@@ -1,11 +1,34 @@
 {
-  "provider": "openai",
-  "model": "gpt-4o-mini",
-  "language": "en",
-  "api_keys": {
-    "openai": "",
-    "openrouter": "",
-    "opencode-zen": "",
-    "opencode-go": ""
-  }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AnkiTutor Config",
+  "description": "Default configuration — real keys are stored by Anki in meta.json, never committed.",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": ["openai", "openrouter", "opencode-zen", "opencode-go"],
+      "default": "openai"
+    },
+    "model": {
+      "type": "string",
+      "default": "gpt-4o-mini"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["en", "pt-BR", "es", "fr", "de"],
+      "default": "en"
+    },
+    "api_keys": {
+      "type": "object",
+      "description": "Per-provider API keys. Empty strings in the example; real keys go in meta.json.",
+      "properties": {
+        "openai":      { "type": "string", "default": "" },
+        "openrouter":  { "type": "string", "default": "" },
+        "opencode-zen": { "type": "string", "default": "" },
+        "opencode-go":  { "type": "string", "default": "" }
+      },
+      "required": ["openai", "openrouter", "opencode-zen", "opencode-go"]
+    }
+  },
+  "required": ["provider", "model", "language", "api_keys"]
 }

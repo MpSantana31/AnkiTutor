@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anki-tutor"
-version = "0.1.0"
+version = "1.0.0"
 description = "Tutor de IA para seus cards do Anki: explique conceitos e tire dúvidas durante a revisão."
 readme = "README.md"
 requires-python = ">=3.11"

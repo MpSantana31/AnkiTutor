@@ -71,6 +71,8 @@ def build_prompt(context: str, mode: str = "explain", language: str = "en") -> s
         f"{context}\n"
         "---\n"
         f"{instruction}\n"
-        "Answer based ONLY on the CARD CONTEXT above. If the context is "
-        "insufficient, say so briefly."
+        "Answer based primarily on the CARD CONTEXT above, but you may also "
+        "use your own knowledge to answer follow-up questions or provide "
+        "additional relevant information. If the question is unrelated, "
+        "politely redirect to the card topic."
     )
