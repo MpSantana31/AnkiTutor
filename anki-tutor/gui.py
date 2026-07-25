@@ -46,10 +46,10 @@ def _fmt_ts(iso_str: str) -> str:
     if not iso_str:
         return ""
     try:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
         dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
-        return dt.astimezone(timezone.utc).strftime("%d/%m %H:%M")
+        return dt.astimezone(UTC).strftime("%d/%m %H:%M")
     except (ValueError, TypeError):
         return iso_str
 
@@ -62,7 +62,8 @@ def user_label(question: str, mode: str) -> str:
 
 
 def build_conversation_markdown(turns, user_label=user_label) -> str:
-    """Render ``turns`` (question, mode, answer, is_error, asked_at, answered_at) as Markdown bubbles.
+    """Render ``turns`` (question, mode, answer, is_error, asked_at,
+    answered_at) as Markdown bubbles.
 
     Each turn becomes a role heading with optional timestamp, followed by the
     answer and an optional answered-at timestamp, separated by a horizontal rule.
@@ -80,9 +81,7 @@ def build_conversation_markdown(turns, user_label=user_label) -> str:
             shown = question or f"[{mode}]"
         ts = f" · {_fmt_ts(asked_at)}" if asked_at else ""
         answer_ts = f" · {_fmt_ts(answered_at)}" if answered_at else ""
-        parts.append(
-            f"**{role}**{ts}: {shown}\n\n{answer}{answer_ts}"
-        )
+        parts.append(f"**{role}**{ts}: {shown}\n\n{answer}{answer_ts}")
     return "\n\n---\n\n".join(parts)
 
 
@@ -319,7 +318,14 @@ class TutorPanel:
         self._streamed += piece
         if self._conversation:
             question, mode, _, _, asked_at, answered_at = self._conversation[-1]
-            self._conversation[-1] = (question, mode, self._streamed, False, asked_at, answered_at)
+            self._conversation[-1] = (
+                question,
+                mode,
+                self._streamed,
+                False,
+                asked_at,
+                answered_at,
+            )
             self._redraw()
 
     def _on_done(self, answer) -> None:
@@ -327,8 +333,12 @@ class TutorPanel:
         if self._conversation:
             question, mode, _, _, _, _ = self._conversation[-1]
             self._conversation[-1] = (
-                question, mode, answer.answer, False,
-                answer.asked_at, answer.answered_at,
+                question,
+                mode,
+                answer.answer,
+                False,
+                answer.asked_at,
+                answer.answered_at,
             )
             self._redraw()
 

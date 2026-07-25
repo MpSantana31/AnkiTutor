@@ -110,7 +110,7 @@ def test_clear_history_removes_all_entries(tmp_path, monkeypatch):
 
 def test_clear_history_unknown_card_is_noop(tmp_path, monkeypatch):
     _load_addon()
-    from anki_tutor.history import clear_history, load_history
+    from anki_tutor.history import clear_history
 
     monkeypatch.setattr("anki_tutor.history.HISTORY_PATH", tmp_path / "history.json")
     clear_history(999)  # should not raise

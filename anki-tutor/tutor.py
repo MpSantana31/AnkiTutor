@@ -53,8 +53,15 @@ def ask(card: object, question: str, mode: str = "explain") -> TutorAnswer:
     answered_at = _now()
 
     return _pack(
-        provider_name, provider, question, mode, card_id, deck_id, text,
-        asked_at, answered_at,
+        provider_name,
+        provider,
+        question,
+        mode,
+        card_id,
+        deck_id,
+        text,
+        asked_at,
+        answered_at,
     )
 
 
@@ -93,8 +100,15 @@ def ask_stream(
         answered_at = _now()
         text_holder["value"] = full
         answer = _pack(
-            provider_name, provider, final_question, mode, card_id, deck_id, full,
-            asked_at, answered_at,
+            provider_name,
+            provider,
+            final_question,
+            mode,
+            card_id,
+            deck_id,
+            full,
+            asked_at,
+            answered_at,
         )
         from .history import append_history
 
@@ -137,8 +151,15 @@ def _prepare(card: object, cfg: dict):
 
 
 def _pack(
-    provider_name, provider, question, mode, card_id, deck_id, text,
-    asked_at=None, answered_at=None,
+    provider_name,
+    provider,
+    question,
+    mode,
+    card_id,
+    deck_id,
+    text,
+    asked_at=None,
+    answered_at=None,
 ) -> TutorAnswer:
     return TutorAnswer(
         answer=text,
