@@ -20,6 +20,12 @@ except ImportError:  # imported directly (tests/CI without package context)
 ADDON_DIR = Path(__file__).resolve().parent
 HISTORY_PATH = ADDON_DIR / "history.json"
 
+__all__ = [
+    "append_history",
+    "clear_history",
+    "load_history",
+]
+
 
 def _entry(answer: TutorAnswer) -> dict[str, Any]:
     return {
