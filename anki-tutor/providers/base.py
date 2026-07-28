@@ -52,7 +52,7 @@ class LLMProvider(ABC):
         """
         try:
             answer = self.chat(context, question, mode)
-        except Exception as exc:  # noqa: BLE001
+        except TutorError as exc:
             if on_error is not None:
                 on_error(exc)
             return ""
