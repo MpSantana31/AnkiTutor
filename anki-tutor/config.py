@@ -7,6 +7,7 @@ provider, API key, model and response language.
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 from typing import Any
@@ -21,13 +22,14 @@ try:
         QLabel,
         QLineEdit,
         QPushButton,
+        QTimer,
         QVBoxLayout,
     )
 except ImportError:  # Outside Anki (tests/CI)
     mw = None  # type: ignore[assignment]
     QComboBox = QDialog = QDialogButtonBox = QFormLayout = (  # type: ignore[assignment]
         QLineEdit
-    ) = QLabel = QVBoxLayout = None
+    ) = QLabel = QVBoxLayout = QTimer = None
 
 ADDON_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = ADDON_DIR / "config.json"
@@ -58,12 +60,25 @@ MODELS_ENDPOINT: dict[str, str] = {
 
 # Local fallback catalogue per provider (used when the API is unreachable).
 PROVIDER_MODELS: dict[str, tuple[str, ...]] = {
-    "openai": ("gpt-4o", "gpt-4o-mini", "gpt-4.1", "o4-mini"),
+    "openai": (
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+        "gpt-4o",
+        "gpt-4o-mini",
+        "o4-mini",
+    ),
     "openrouter": (
+        "openai/gpt-4.1",
         "openai/gpt-4o",
         "openai/gpt-4o-mini",
-        "anthropic/claude-3.5-sonnet",
-        "meta-llama/llama-3.1-8b-instruct",
+        "openai/o4-mini",
+        "openai/o3-mini",
+        "anthropic/claude-sonnet-4",
+        "anthropic/claude-3.5-haiku",
+        "google/gemini-2.5-flash",
+        "meta-llama/llama-4-maverick",
+        "deepseek/deepseek-chat-v3-0324",
     ),
     "opencode-zen": ("claude-fable-5", "claude-opus-4-8"),
     "opencode-go": ("minimax-m3", "minimax-m2.7"),
@@ -78,6 +93,18 @@ DEFAULT_MODEL_FOR = {
 
 MODELS_TIMEOUT = 10
 
+__all__ = [
+    "DEFAULT_CONFIG",
+    "DEFAULT_MODEL_FOR",
+    "PROVIDER_MODELS",
+    "PROVIDERS",
+    "LANGUAGES",
+    "fetch_models",
+    "get_config",
+    "show_config_dialog",
+    "write_config",
+]
+
 
 def _load_default() -> dict[str, Any]:
     """Load defaults from ``config.json`` if present, else use hard-coded defaults."""
@@ -86,7 +113,7 @@ def _load_default() -> dict[str, Any]:
             return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             pass
-    return dict(DEFAULT_CONFIG)
+    return copy.deepcopy(DEFAULT_CONFIG)
 
 
 # Anki manages config per add-on package name, not per module. This add-on's
@@ -134,11 +161,20 @@ def fetch_models(provider: str, api_key: str = "") -> tuple[str, ...]:
 
     try:
         import requests
+    except ImportError:
+        return PROVIDER_MODELS.get(provider, ())
 
+    try:
         resp = requests.get(url, headers=headers, timeout=MODELS_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
-    except Exception:  # noqa: BLE001 — any failure -> safe fallback
+    except (
+        requests.RequestException,
+        ValueError,
+        KeyError,
+        TypeError,
+        json.JSONDecodeError,
+    ):
         return PROVIDER_MODELS.get(provider, ())
 
     models = _parse_models(provider, data)
@@ -188,9 +224,18 @@ def show_config_dialog() -> None:
         api_key_edit.setText(api_keys.get(new_provider, ""))
         _populate_models(new_provider)
 
+    # Debounce timer for _on_key_edited: wait 500ms after the last keystroke
+    # before calling _populate_models, so we don't fire a network request on
+    # every character typed.
+    _key_timer = QTimer()  # type: ignore[operator]
+    _key_timer.setSingleShot(True)
+    _key_timer.setInterval(500)
+
     def _on_key_edited(_: str) -> None:
         api_keys[provider_box.currentText()] = api_key_edit.text().strip()
-        _populate_models(provider_box.currentText())
+        _key_timer.start()
+
+    _key_timer.timeout.connect(lambda: _populate_models(provider_box.currentText()))
 
     model_box = QComboBox()
 

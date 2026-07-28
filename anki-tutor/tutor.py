@@ -8,12 +8,18 @@ returns a structured ``TutorAnswer``. ``ask`` is the blocking path (tests/CI);
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC
+from typing import Any
 
 from . import config, utils
 from .errors import ConfigError
 from .prompts import DIRECT_MODES, implicit_question
 from .providers import create_provider
+
+__all__ = [
+    "TutorAnswer",
+    "ask",
+    "ask_stream",
+]
 
 
 @dataclass
@@ -48,9 +54,9 @@ def ask(card: object, question: str, mode: str = "explain") -> TutorAnswer:
         raise ConfigError("Please type a question.")
 
     provider_name, provider, context, card_id, deck_id = _prepare(card, cfg)
-    asked_at = _now()
+    asked_at = utils.now()
     text = provider.chat(context, question.strip(), mode)
-    answered_at = _now()
+    answered_at = utils.now()
 
     return _pack(
         provider_name,
@@ -85,7 +91,7 @@ def ask_stream(
         raise ConfigError("Please type a question.")
 
     provider_name, provider, context, card_id, deck_id = _prepare(card, cfg)
-    asked_at = _now()
+    asked_at = utils.now()
     text_holder = {"value": ""}
 
     fallback = (
@@ -97,7 +103,7 @@ def ask_stream(
 
     def _on_done(full: str) -> None:
         nonlocal asked_at
-        answered_at = _now()
+        answered_at = utils.now()
         text_holder["value"] = full
         answer = _pack(
             provider_name,
@@ -133,7 +139,9 @@ def _resolve_question(question: str, mode: str, cfg: dict) -> str:
     return question
 
 
-def _prepare(card: object, cfg: dict):
+def _prepare(
+    card: object, cfg: dict[str, Any]
+) -> tuple[str, Any, str, int | None, int | None]:
     """Validate config/key and build provider + context (shared by ask/ask_stream)."""
     provider_name = cfg.get("provider", "")
     api_keys = cfg.get("api_keys", {}) or {}
@@ -151,15 +159,15 @@ def _prepare(card: object, cfg: dict):
 
 
 def _pack(
-    provider_name,
-    provider,
-    question,
-    mode,
-    card_id,
-    deck_id,
-    text,
-    asked_at=None,
-    answered_at=None,
+    provider_name: str,
+    provider: Any,
+    question: str,
+    mode: str,
+    card_id: int | None,
+    deck_id: int | None,
+    text: str,
+    asked_at: str | None = None,
+    answered_at: str | None = None,
 ) -> TutorAnswer:
     return TutorAnswer(
         answer=text,
@@ -169,12 +177,6 @@ def _pack(
         deck_id=deck_id,
         provider=provider_name,
         model=provider.model,
-        asked_at=asked_at or _now(),
-        answered_at=answered_at or _now(),
+        asked_at=asked_at or utils.now(),
+        answered_at=answered_at or utils.now(),
     )
-
-
-def _now() -> str:
-    from datetime import datetime
-
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")

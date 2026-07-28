@@ -45,6 +45,16 @@ _IMPLICIT_QUESTIONS: dict[str, dict[str, str]] = {
     },
 }
 
+# All available modes (including "explain").
+ALL_MODES: tuple[str, ...] = ("explain",) + DIRECT_MODES
+
+__all__ = [
+    "ALL_MODES",
+    "DIRECT_MODES",
+    "build_prompt",
+    "implicit_question",
+]
+
 
 def implicit_question(mode: str, language: str = "en") -> str:
     """Return the fixed question used for direct modes (no user input).

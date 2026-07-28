@@ -36,22 +36,14 @@ except ImportError:  # Outside Anki (tests/CI)
 from . import utils
 from .errors import TutorError
 from .history import load_history
-from .prompts import DIRECT_MODES
+from .prompts import ALL_MODES, DIRECT_MODES
 
-_MODES = ("explain", "simplify", "example", "relate")
-
-
-def _fmt_ts(iso_str: str) -> str:
-    """Format ISO timestamp like '2026-07-24T12:00:00Z' to '24/07 12:00'."""
-    if not iso_str:
-        return ""
-    try:
-        from datetime import UTC, datetime
-
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
-        return dt.astimezone(UTC).strftime("%d/%m %H:%M")
-    except (ValueError, TypeError):
-        return iso_str
+__all__ = [
+    "build_conversation_markdown",
+    "user_label",
+    "TutorPanel",
+    "TutorWorker",
+]
 
 
 def user_label(question: str, mode: str) -> str:
@@ -79,8 +71,8 @@ def build_conversation_markdown(turns, user_label=user_label) -> str:
             shown = f"[{mode}]"
         else:
             shown = question or f"[{mode}]"
-        ts = f" · {_fmt_ts(asked_at)}" if asked_at else ""
-        answer_ts = f" · {_fmt_ts(answered_at)}" if answered_at else ""
+        ts = f" · {utils.fmt_ts(asked_at)}" if asked_at else ""
+        answer_ts = f" · {utils.fmt_ts(answered_at)}" if answered_at else ""
         parts.append(f"**{role}**{ts}: {shown}\n\n{answer}{answer_ts}")
     return "\n\n---\n\n".join(parts)
 
@@ -227,7 +219,7 @@ class TutorPanel:
         mode_label = QLabel("Mode:")
         mode_row.addWidget(mode_label)
         self.mode_box = QComboBox()
-        self.mode_box.addItems(_MODES)
+        self.mode_box.addItems(ALL_MODES)
         self.mode_box.currentTextChanged.connect(self._on_mode_changed)
         mode_row.addWidget(self.mode_box)
         mode_row.addStretch(1)

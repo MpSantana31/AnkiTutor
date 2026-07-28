@@ -3,17 +3,56 @@
 ``extract_card`` pulls the front/back text out of an Anki card object so it can
 be used as LLM context. Works with real ``anki.cards.Card`` (via the note) and
 with the test ``FakeCard`` fixture.
+
+.. function:: now()
+              fmt_ts(iso_str)
+
+   Centralised timestamp functions used by both ``tutor`` and ``gui`` (ADR-003).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
+
+__all__ = [
+    "SaveResult",
+    "build_save_text",
+    "extract_card",
+    "extract_card_meta",
+    "fmt_ts",
+    "now",
+    "save_answer_to_note",
+]
 
 try:
     from .prompts import DIRECT_MODES
 except ImportError:  # imported directly (tests/CI without package context)
     from prompts import DIRECT_MODES
+
+
+def now() -> str:
+    """Return the current UTC time as an ISO-8601 string
+    (e.g. ``2026-07-24T12:00:00Z``).
+
+    Used by ``tutor._now``, ``gui._fmt_ts``, and other time-stamping needs.
+    """
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def fmt_ts(iso_str: str) -> str:
+    """Format an ISO-8601 timestamp like ``2026-07-24T12:00:00Z`` to ``24/07 12:00``.
+
+    Returns the original string on parse failure.
+    """
+    if not iso_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt.astimezone(UTC).strftime("%d/%m %H:%M")
+    except (ValueError, TypeError):
+        return iso_str
 
 
 def extract_card_meta(card: Any) -> tuple[int | None, int | None]:
@@ -80,7 +119,7 @@ def save_answer_to_note(card: Any, text: str) -> SaveResult:
     if callable(note):
         try:
             note = note()
-        except Exception:  # noqa: BLE001
+        except (AttributeError, TypeError):
             return SaveResult("Could not access this card's note to save.")
     if note is None:
         return SaveResult("Could not access this card's note to save.")
@@ -99,13 +138,13 @@ def save_answer_to_note(card: Any, text: str) -> SaveResult:
 
     try:
         existing = (note[target] or "").strip()
-    except Exception:  # noqa: BLE001
+    except (KeyError, TypeError, IndexError):
         return SaveResult("The 'AnkiTutor' field is not accessible on this note.")
     note[target] = f"{existing}\n\n{text}" if existing else text
 
     try:
         _persist_note(note)
-    except Exception as exc:  # noqa: BLE001
+    except (OSError, RuntimeError, AttributeError) as exc:
         return SaveResult(f"Could not save to note: {exc}")
     return SaveResult("Saved to note.", field=target)
 
@@ -117,7 +156,7 @@ def _get_field_names(note: Any) -> list[str]:
     if callable(keys):
         try:
             names = list(keys())
-        except Exception:  # noqa: BLE001
+        except (AttributeError, TypeError):
             names = []
     if not names:
         fields = getattr(note, "fields", None)
@@ -172,7 +211,7 @@ def _ensure_anki_tutor_field(note: Any) -> bool:
             note_fields.append("")
 
         return True
-    except Exception:  # noqa: BLE001
+    except (KeyError, TypeError, AttributeError):
         return False
 
 
@@ -199,7 +238,7 @@ def _get_mw():
         from aqt import mw
 
         return mw
-    except Exception:  # noqa: BLE001
+    except ImportError:
         return None
 
 
@@ -221,7 +260,7 @@ def extract_card(card: Any) -> tuple[str, str]:
     if callable(note):
         try:
             note = note()
-        except Exception:  # noqa: BLE001
+        except (AttributeError, TypeError):
             note = None
 
     if note is not None:
