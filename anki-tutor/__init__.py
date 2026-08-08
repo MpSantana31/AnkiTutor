@@ -85,10 +85,21 @@ def _handle_js_message(handled, message, context):
     return handled
 
 
+def open_support() -> None:
+    """Open the support/donations dialog."""
+    from . import support
+
+    support.open_support()
+
+
 def _setup_menu() -> None:
     action = QAction("AnkiTutor…", mw)
     action.triggered.connect(open_config)
-    mw.form.menuTools.addAction(action)  # Tools menu
+    mw.form.menuTools.addAction(action)
+
+    support_action = QAction("Support AnkiTutor…", mw)
+    support_action.triggered.connect(open_support)
+    mw.form.menuTools.addAction(support_action)
 
 
 def _setup_shortcut() -> None:

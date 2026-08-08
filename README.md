@@ -47,6 +47,26 @@ repository. The add-on makes no external calls besides the LLM provider API.
 - **Error Boundary** so Anki never crashes (`TutorError` + subclasses).
 - **100% testable without network** (`FakeProvider` in tests).
 
+## Support / Apoie
+
+If AnkiTutor helps your study, consider supporting its development.
+Se o AnkiTutor te ajuda a estudar, considere apoiar o desenvolvimento.
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/marcospsantana)
+[![Sponsor](https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/MpSantana31)
+
+### Support via Crypto (Web3)
+
+If you prefer to support using cryptocurrencies, send EVM-compatible tokens to:
+Se preferir apoiar com criptomoedas, envie tokens compatíveis com EVM para:
+
+> **EVM Address (Ethereum, Polygon, Arbitrum, Optimism):**
+> `0x370D0C7d3105677138C3719722239fB2A03dC9C8`
+
+<img src="assets/crypto-qr.png" alt="EVM donation QR" width="200" />
+
+*Please double-check the address and network before sending. / Confira o endereço e a rede antes de enviar.*
+
 ## For developers
 
 The addon lives in `anki-tutor/`. Quality is enforced by CI: `ruff`
@@ -112,6 +132,27 @@ nenhuma chamada externa além da API do provedor de LLM.
 O addon vive em `anki-tutor/`. Qualidade é garantida por CI:
 `ruff` (lint + format) e `pytest` com cobertura. Veja a arquitetura e os
 ADRs no repositório.
+
+## Support / Apoie
+
+If AnkiTutor helps your study, consider supporting its development.
+Se o AnkiTutor te ajuda a estudar, considere apoiar o desenvolvimento.
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/marcospsantana)
+[![Sponsor](https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/MpSantana31)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/<bmc_username>)
+
+### Apoio via Cripto (Web3)
+
+If you prefer to support using cryptocurrencies, send EVM-compatible tokens to:
+Se preferir apoiar com criptomoedas, envie tokens compatíveis com EVM para:
+
+> **EVM Address (Ethereum, Polygon, Arbitrum, Optimism):**
+> `0x370D0C7d3105677138C3719722239fB2A03dC9C8`
+
+<img src="assets/crypto-qr.png" alt="EVM donation QR" width="200" />
+
+*Please double-check the address and network before sending. / Confira o endereço e a rede antes de enviar.*
 
 ## Licença
 
